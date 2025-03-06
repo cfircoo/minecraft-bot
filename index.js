@@ -14,6 +14,21 @@ const config = {
 // Create the bot instance
 const bot = mineflayer.createBot(config);
 
+// Patch for the vehicle.passengers undefined error
+const originalEmit = bot._client.emit;
+bot._client.emit = function(name, ...args) {
+  try {
+    return originalEmit.apply(this, [name, ...args]);
+  } catch (error) {
+    if (error.message && error.message.includes("Cannot read properties of undefined (reading 'passengers')")) {
+      console.log('Caught and handled vehicle.passengers undefined error');
+      // Skip this problematic packet
+      return;
+    }
+    throw error;
+  }
+};
+
 // Load pathfinder plugin
 bot.loadPlugin(pathfinder.pathfinder);
 
@@ -51,12 +66,14 @@ bot.on('chat', (username, message) => {
   }
 });
 
-bot.on('kicked', (reason) => {
-  console.log(`Bot was kicked: ${reason}`);
+bot.on('kicked', (reason, loggedIn) => {
+  console.log(`Bot was kicked: ${JSON.stringify(reason)}`);
+  console.log(`Logged in: ${loggedIn}`);
 });
 
 bot.on('error', (err) => {
-  console.error(`Bot encountered an error: ${err}`);
+  console.error(`Bot encountered an error: ${err.message}`);
+  console.error(err.stack);
 });
 
 // Add inventory ready event
@@ -292,13 +309,15 @@ function handleCommand(username, command, args) {
 }
 
 // Handle errors and cleanup
-process.on('SIGINT', () => {
+function handleSIGINT() {
   console.log('Bot is disconnecting...');
   bot.quit();
   process.exit();
-});
+}
+
+process.on('SIGINT', handleSIGINT);
 
 console.log('Bot is starting...');
 
 // Export the handleCommand function for use in other files
-module.exports = { handleCommand }; 
+module.exports = { handleCommand, handleSIGINT }; 

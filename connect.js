@@ -17,10 +17,10 @@ const { GoalNear } = pathfinder.goals;
 
 // Get command line arguments
 const args = process.argv.slice(2);
-const host = args[0] || 'localhost';
+const host = args[0] || '168.192.1.50';
 const port = parseInt(args[1]) || 25565;
 const username = args[2] || 'BobiBot';
-const version = args[3] || '1.19.2';
+const version = args[3] || '1.20.1';
 
 console.log(`Connecting to ${host}:${port} as ${username} (version: ${version})`);
 
@@ -34,6 +34,21 @@ const config = {
 
 // Create the bot instance
 const bot = mineflayer.createBot(config);
+
+// Patch for the vehicle.passengers undefined error
+const originalEmit = bot._client.emit;
+bot._client.emit = function(name, ...args) {
+  try {
+    return originalEmit.apply(this, [name, ...args]);
+  } catch (error) {
+    if (error.message && error.message.includes("Cannot read properties of undefined (reading 'passengers')")) {
+      console.log('Caught and handled vehicle.passengers undefined error');
+      // Skip this problematic packet
+      return;
+    }
+    throw error;
+  }
+};
 
 // Load pathfinder plugin
 bot.loadPlugin(pathfinder.pathfinder);
@@ -71,12 +86,14 @@ bot.on('chat', (username, message) => {
   }
 });
 
-bot.on('kicked', (reason) => {
-  console.log(`Bot was kicked: ${reason}`);
+bot.on('kicked', (reason, loggedIn) => {
+  console.log(`Bot was kicked: ${JSON.stringify(reason)}`);
+  console.log(`Logged in: ${loggedIn}`);
 });
 
 bot.on('error', (err) => {
-  console.error(`Bot encountered an error: ${err}`);
+  console.error(`Bot encountered an error: ${err.message}`);
+  console.error(err.stack);
 });
 
 // Handle errors and cleanup

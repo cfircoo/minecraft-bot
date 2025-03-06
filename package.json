@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "keywords": [
     "minecraft",
@@ -15,8 +16,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mineflayer": "^4.8.1",
+    "mineflayer": "^4.14.0",
     "mineflayer-pathfinder": "^2.4.2",
     "vec3": "^0.1.8"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "sinon": "^17.0.1"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "*.js",
+      "!node_modules/**",
+      "!coverage/**",
+      "!jest.config.js"
+    ]
   }
 }
